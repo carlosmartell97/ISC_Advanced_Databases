@@ -22,7 +22,7 @@ access_secret = data["access_secret"]
 
 
 def get_all_tweets(screen_name):
-	print ("getting tweets from %s into csv file" % screen_name)
+	print ("getting all tweets from %s into csv file" % screen_name)
 	# Twitter only allows access to a users most recent 3240 tweets with this method
 
 	# authorize twitter, initialize tweepy
@@ -81,7 +81,7 @@ def averageTweetTime(screen_name):
 		for row in readCSV:
 			date = row[1]
 			dates.append(date)
-		# print(dates)
+		numTweets = len(dates) - 1
 		total = 0
 		for date in dates:
 			# print(date[11: len(date)])
@@ -90,6 +90,7 @@ def averageTweetTime(screen_name):
 				total += getSeconds(date[11: len(date)])
 		averageseconds = total/(len(dates)-1) # don't count the first line
 		average24HrFormat = str(datetime.timedelta(seconds=averageseconds))
+		print("total amount of tweets: %s" % numTweets)
 		print("average tweet time is: %s" % average24HrFormat)
 
 
