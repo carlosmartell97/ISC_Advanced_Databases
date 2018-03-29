@@ -7,6 +7,10 @@ import json
 import os
 import sys
 import datetime
+from kivy.app import App
+from kivy.graphics import Color, Rectangle
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.label import Label
 
 # Configuration file
 abs_path = os.path.dirname(os.path.realpath(__file__)) + '/'
@@ -149,7 +153,7 @@ def get_user_info(screen_name):
 
 
 if __name__ == '__main__':
-    # pass in the username of the account you want to download
+    # pass in the username of the account you want to analyze
     get_all_tweets(sys.argv[1])
     get_user_info(sys.argv[1])
     averages(sys.argv[1])
