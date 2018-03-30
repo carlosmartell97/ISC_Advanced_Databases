@@ -7,10 +7,9 @@ import json
 import os
 import sys
 import datetime
-from kivy.app import App
-from kivy.graphics import Color, Rectangle
-from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.label import Label
+from kivy_window import Twitter_AnalysisApp
+from unidecode import unidecode
+import Global
 
 # Configuration file
 abs_path = os.path.dirname(os.path.realpath(__file__)) + '/'
@@ -95,6 +94,10 @@ def averages(screen_name):
         average24HrFormat = str(datetime.timedelta(seconds=averageSeconds))
         averageRetweets = totalRetweets/(numTweets)  # don't count the first line
         averageFavorites = totalFavorites/(numTweets)  # don't count the first line
+        Global.tweets = str(numTweets) + "\ntweets"
+        Global.average_tweet_time = average24HrFormat + "\naverage tweet time"
+        Global.average_tweet_retweets = str(averageRetweets) + "\naverage retweets in tweets"
+        Global.average_tweet_favorites = str(averageFavorites) + "\naverage favorites in tweets"
         print("total amount of tweets: %s" % numTweets)
         print("average tweet time is: %s" % average24HrFormat)
         print("average retweets in tweets: %s" % averageRetweets)
@@ -117,10 +120,20 @@ def get_user_info(screen_name):
     screen_name = user.screen_name
     followers = user.followers_count
     following = user.friends_count
-    profile_image_url = user.profile_image_url.replace("normal", "400x400")
+    profile_image_url = user.profile_image_url.replace("normal", "200x200")
     location = user.location
     verified = user.verified
     created_at = user.created_at
+
+    # app = App.get_running_app()
+    Global.image_url = profile_image_url
+    Global.screen_name = "@" + screen_name
+    if(location != ""):
+        Global.location = "location: " + unidecode(location)
+    Global.verified = "verified: " + str(verified)
+    Global.created_at = "on Twitter since: " + str(created_at)
+    Global.followers = str(followers) + "\nfollowers"
+    Global.following = str(following) + "\nfollowing"
 
     print("screen name: %s" % screen_name)
     print("created at: %s" % created_at)
@@ -146,9 +159,11 @@ def get_user_info(screen_name):
     # print("total follows back: %d     followers: %d     num_follower: %d" % (followback_total, followers, num_follower))
     if followers == MAX_RETRIEVE_FOLLOWERS or followers < MAX_RETRIEVE_FOLLOWERS:
         followback_percentage = (followback_total*100)/followers
+        Global.followback_percentage = "from all of %s's %d followers, %d have been followed back, %d%% of them" % (screen_name, followers, followback_total, followback_percentage)
         print("from all of %s's %d followers, %d have been followed back, %d%% of them" % (screen_name, followers, followback_total, followback_percentage))
     else:  # only the newest followers will were examined, to avoid reaching the API's rate limit
         followback_percentage = (followback_total*100)/MAX_RETRIEVE_FOLLOWERS
+        Global.followback_percentage = "from %s's newest %d followers, %d have been followed back, %d%% of them" % (screen_name, MAX_RETRIEVE_FOLLOWERS, followback_total, followback_percentage)
         print("from %s's newest %d followers, %d have been followed back, %d%% of them" % (screen_name, MAX_RETRIEVE_FOLLOWERS, followback_total, followback_percentage))
 
 
@@ -157,3 +172,4 @@ if __name__ == '__main__':
     get_all_tweets(sys.argv[1])
     get_user_info(sys.argv[1])
     averages(sys.argv[1])
+    Twitter_AnalysisApp().run()
