@@ -3,6 +3,7 @@ from kivy.graphics import Color, Rectangle
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.image import AsyncImage
+from kivy.uix.image import Image
 from kivy.uix.widget import Widget
 from kivy.config import Config
 import Global
@@ -89,7 +90,15 @@ class Widgets(FloatLayout):
         self.add_widget(
             Label(
                 text=str(Global.followback_percentage),
-                pos=(-root.width*.4, -root.height)
+                pos=(-root.width*.4, root.height)
+            )
+        )
+        self.add_widget(
+            Image(
+                source=str(Global.wordcloud_image),
+                pos=(root.width*2, root.height*.2),
+                size_hint_y=None,
+                height=350
             )
         )
 

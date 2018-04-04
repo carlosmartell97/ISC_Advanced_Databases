@@ -10,6 +10,8 @@ import datetime
 from kivy_window import Twitter_AnalysisApp
 from unidecode import unidecode
 import Global
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
 
 # Configuration file
 abs_path = os.path.dirname(os.path.realpath(__file__)) + '/'
@@ -77,11 +79,14 @@ def averages(screen_name):
         totalTime = 0
         totalRetweets = 0
         totalFavorites = 0
+        tweets_file = open(screen_name+"_tweets_only.txt", "w")
         for row in readCSV:
             rows += 1
             date = row[1]
             retweets = row[2]
             favorites = row[3]
+            tweetText = row[4]
+            tweets_file.write(tweetText+"\n")
             if(date != "created_at"):  # skip first line
                 # print(getSeconds(date[11: len(date)]))
                 totalTime += getSeconds(date[11: len(date)])
@@ -89,6 +94,8 @@ def averages(screen_name):
                 totalRetweets += int(retweets)
             if(favorites != "favorites"):  # skip first line
                 totalFavorites += int(favorites)
+        tweets_file.close()
+        generate_word_cloud(screen_name)
         numTweets = rows - 1
         averageSeconds = totalTime/numTweets  # don't count the first line
         average24HrFormat = str(datetime.timedelta(seconds=averageSeconds))
@@ -165,6 +172,21 @@ def get_user_info(screen_name):
         followback_percentage = (followback_total*100)/MAX_RETRIEVE_FOLLOWERS
         Global.followback_percentage = "from %s's newest %d followers, %d have been followed back, %d%% of them" % (screen_name, MAX_RETRIEVE_FOLLOWERS, followback_total, followback_percentage)
         print("from %s's newest %d followers, %d have been followed back, %d%% of them" % (screen_name, MAX_RETRIEVE_FOLLOWERS, followback_total, followback_percentage))
+
+
+def generate_word_cloud(screen_name):
+    d = os.path.dirname(__file__)
+
+    # Read the whole text.
+    tweetsText = open(os.path.join(d, screen_name+"_tweets_only.txt")).read()
+
+    wordcloud = WordCloud(max_font_size=40).generate(tweetsText)
+    figure = plt.figure(dpi=300)
+    plt.imshow(wordcloud, interpolation="bilinear")
+    plt.axis("off")
+    # plt.show()
+    figure.savefig(screen_name+"_word_cloud.png", bbox_inches='tight', transparent=True, pad_inches=0, dpi=300)
+    Global.wordcloud_image = screen_name+"_word_cloud.png"
 
 
 if __name__ == '__main__':
