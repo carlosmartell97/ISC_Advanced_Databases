@@ -47,7 +47,7 @@ class Widgets(FloatLayout):
         )
         self.add_widget(
             Label(
-                text=str(Global.created_at),
+                text="description: "+str(Global.description),
                 pos=(-root.width*6, -root.height*0.6)
             )
         )
@@ -99,6 +99,30 @@ class Widgets(FloatLayout):
                 pos=(root.width*2, root.height*.2),
                 size_hint_y=None,
                 height=350
+            )
+        )
+        self.add_widget(
+            Label(
+                text="on Twitter since: "+str(Global.created_at),
+                pos=(-root.width*.6, root.height*.6)
+            )
+        )
+        self.add_widget(
+            Label(
+                text="after that, time taken to make 1st tweet: "+str(Global.time_taken_1st_tweet),
+                pos=(-root.width*.6, root.height*.4)
+            )
+        )
+        self.add_widget(
+            Label(
+                text="after that, time taken for first 100 tweets: "+str(Global.time_taken_100_tweets),
+                pos=(-root.width*.6, root.height*.2)
+            )
+        )
+        self.add_widget(
+            Label(
+                text="most tweets per day: "+str(Global.most_tweets_per_day)+" on "+str(Global.most_tweets_day),
+                pos=(-root.width*.6, 0)
             )
         )
 

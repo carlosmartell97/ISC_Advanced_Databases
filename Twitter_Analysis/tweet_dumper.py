@@ -12,6 +12,7 @@ from unidecode import unidecode
 import Global
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
+import itertools
 
 # Configuration file
 abs_path = os.path.dirname(os.path.realpath(__file__)) + '/'
@@ -60,7 +61,7 @@ def get_all_tweets(screen_name):
     outtweets = [[tweet.id_str, tweet.created_at, tweet.retweet_count, tweet.favorite_count, tweet.text.encode("utf-8")] for tweet in alltweets]
 
     # write the csv
-    with open('%s_tweets.csv' % screen_name, 'wb') as f:
+    with open("csv/"+'%s_tweets.csv' % screen_name, 'wb') as f:
         writer = csv.writer(f)
         writer.writerow(["id", "created_at", "retweets", "favorites", "text"])
         writer.writerows(outtweets)
@@ -73,23 +74,39 @@ def getSeconds(time_str):
 
 
 def averages(screen_name):
-    with open(screen_name+'_tweets.csv') as csvfile:
+    with open("csv/"+screen_name+'_tweets.csv') as csvfile:
         readCSV = csv.reader(csvfile, delimiter=',')
         rows = 0
         totalTime = 0
         totalRetweets = 0
         totalFavorites = 0
-        tweets_file = open(screen_name+"_tweets_only.txt", "w")
+        tweets_file = open("txt/"+screen_name+"_tweets_only.txt", "w")
+        tweets_same_day = 1
+        most_tweets_per_day = 0
+        most_tweets_day = ""
+        previous_tweet_date = ""
+        date_str = ""
         for row in readCSV:
             rows += 1
             date = row[1]
             retweets = row[2]
             favorites = row[3]
             tweetText = row[4]
-            tweets_file.write(tweetText+"\n")
+            tweets_file.write(tweetText+"\n\n")
             if(date != "created_at"):  # skip first line
-                # print(getSeconds(date[11: len(date)]))
                 totalTime += getSeconds(date[11: len(date)])
+                date_obj = datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+                date_str = str(date_obj.year)+"-"+str(date_obj.month)+"-"+str(date_obj.day)
+                # print(" date_str: %s" % date_str)
+                if(date_str == previous_tweet_date):
+                    tweets_same_day += 1
+                    if(tweets_same_day > most_tweets_per_day):
+                        most_tweets_per_day = tweets_same_day
+                        most_tweets_day = date_str
+                else:
+                    tweets_same_day = 1
+                # print("  on %s, \t%d tweets" % (date_str, tweets_same_day))
+            previous_tweet_date = date_str
             if(retweets != "retweets"):  # skip first line
                 totalRetweets += int(retweets)
             if(favorites != "favorites"):  # skip first line
@@ -97,6 +114,27 @@ def averages(screen_name):
         tweets_file.close()
         generate_word_cloud(screen_name)
         numTweets = rows - 1
+        if(numTweets >= 1):
+            readCSV = csv.reader(open("csv/"+screen_name+'_tweets.csv'), delimiter=',')
+            row_1 = next(itertools.islice(readCSV, numTweets, numTweets+1))
+            print(" 1st tweet: %s" % row_1[4])
+            first_tweet_date = datetime.datetime.strptime(row_1[1], "%Y-%m-%d %H:%M:%S")
+            account_created_date = datetime.datetime.strptime(Global.created_at, "%Y-%m-%d %H:%M:%S")
+            date_delta = first_tweet_date - account_created_date
+            print("1st tweet date: %s" % first_tweet_date)
+            print("account created date: %s" % account_created_date)
+            print("time taken to make 1st tweet: %s DAYS %s SECONDS" % (str(date_delta.days), str(date_delta.seconds)))
+            Global.time_taken_1st_tweet = "%s DAYS %s SECONDS" % (str(date_delta.days), str(date_delta.seconds))
+        if(numTweets >= 100):
+            readCSV = csv.reader(open("csv/"+screen_name+'_tweets.csv'), delimiter=',')
+            row_100 = next(itertools.islice(readCSV, numTweets-100, numTweets-99))
+            print(" 100th tweet: %s" % row_100[4])
+            tweet_100_date = datetime.datetime.strptime(row_100[1], "%Y-%m-%d %H:%M:%S")
+            date_delta = tweet_100_date - first_tweet_date
+            print("100th tweet date: %s" % tweet_100_date)
+            print("1st tweet date date: %s" % first_tweet_date)
+            print("from then, time taken to make 100 tweets: %s DAYS %s SECONDS" % (str(date_delta.days), str(date_delta.seconds)))
+            Global.time_taken_100_tweets = "%s DAYS %s SECONDS" % (str(date_delta.days), str(date_delta.seconds))
         averageSeconds = totalTime/numTweets  # don't count the first line
         average24HrFormat = str(datetime.timedelta(seconds=averageSeconds))
         averageRetweets = totalRetweets/(numTweets)  # don't count the first line
@@ -105,6 +143,8 @@ def averages(screen_name):
         Global.average_tweet_time = average24HrFormat + "\naverage tweet time"
         Global.average_tweet_retweets = str(averageRetweets) + "\naverage retweets in tweets"
         Global.average_tweet_favorites = str(averageFavorites) + "\naverage favorites in tweets"
+        Global.most_tweets_per_day = most_tweets_per_day
+        Global.most_tweets_day = most_tweets_day
         print("total amount of tweets: %s" % numTweets)
         print("average tweet time is: %s" % average24HrFormat)
         print("average retweets in tweets: %s" % averageRetweets)
@@ -125,6 +165,7 @@ def get_user_info(screen_name):
     # get user's info
     user = api.get_user(screen_name)
     screen_name = user.screen_name
+    description = user.description
     followers = user.followers_count
     following = user.friends_count
     profile_image_url = user.profile_image_url.replace("normal", "200x200")
@@ -135,10 +176,12 @@ def get_user_info(screen_name):
     # app = App.get_running_app()
     Global.image_url = profile_image_url
     Global.screen_name = "@" + screen_name
+    if(description != ""):
+        Global.description = description
     if(location != ""):
         Global.location = "location: " + unidecode(location)
     Global.verified = "verified: " + str(verified)
-    Global.created_at = "on Twitter since: " + str(created_at)
+    Global.created_at = str(created_at)
     Global.followers = str(followers) + "\nfollowers"
     Global.following = str(following) + "\nfollowing"
 
@@ -178,15 +221,15 @@ def generate_word_cloud(screen_name):
     d = os.path.dirname(__file__)
 
     # Read the whole text.
-    tweetsText = open(os.path.join(d, screen_name+"_tweets_only.txt")).read()
+    tweetsText = open(os.path.join(d, "txt/"+screen_name+"_tweets_only.txt")).read()
 
     wordcloud = WordCloud(max_font_size=40).generate(tweetsText)
     figure = plt.figure(dpi=300)
     plt.imshow(wordcloud, interpolation="bilinear")
     plt.axis("off")
     # plt.show()
-    figure.savefig(screen_name+"_word_cloud.png", bbox_inches='tight', transparent=True, pad_inches=0, dpi=300)
-    Global.wordcloud_image = screen_name+"_word_cloud.png"
+    figure.savefig("png/"+screen_name+"_word_cloud.png", bbox_inches='tight', transparent=True, pad_inches=0, dpi=300)
+    Global.wordcloud_image = "png/"+screen_name+"_word_cloud.png"
 
 
 if __name__ == '__main__':
