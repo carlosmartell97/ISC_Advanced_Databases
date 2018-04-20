@@ -13,6 +13,7 @@ import Global
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import itertools
+import re
 
 # Configuration file
 abs_path = os.path.dirname(os.path.realpath(__file__)) + '/'
@@ -26,16 +27,33 @@ CONSUMER_SECRET = data["consumer_secret"]
 ACCESS_KEY = data["access_key"]
 ACCESS_SECRET = data["access_secret"]
 
+emoji_pattern = re.compile("["
+        u"\U0001F600-\U0001F64F"  # emoticons
+        u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+        u"\U0001F680-\U0001F6FF"  # transport & map symbols
+        u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
+                           "]+", flags=re.UNICODE)
+
 # authorize twitter, initialize tweepy
 auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
 auth.set_access_token(ACCESS_KEY, ACCESS_SECRET)
 api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True)
 
 
+def ensure_dir(file_path):
+    directory = os.path.dirname(file_path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+
 def get_all_tweets(screen_name):
     # Twitter only allows access to a users most recent 3240 tweets with this method
-
     print ("getting all tweets from %s into csv file..." % screen_name)
+
+    ensure_dir("csv/")
+    ensure_dir("txt/")
+    ensure_dir("png/")
+
     # initialize a list to hold all the tweepy Tweets
     alltweets = []
     # make initial request for most recent tweets (200 is the maximum allowed count)
@@ -92,7 +110,8 @@ def averages(screen_name):
             retweets = row[2]
             favorites = row[3]
             tweetText = row[4]
-            tweets_file.write(tweetText+"\n\n")
+            if(tweetText != "text"):
+                tweets_file.write(tweetText+"\n\n")
             if(date != "created_at"):  # skip first line
                 totalTime += getSeconds(date[11: len(date)])
                 date_obj = datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
@@ -139,10 +158,10 @@ def averages(screen_name):
         average24HrFormat = str(datetime.timedelta(seconds=averageSeconds))
         averageRetweets = totalRetweets/(numTweets)  # don't count the first line
         averageFavorites = totalFavorites/(numTweets)  # don't count the first line
-        Global.tweets = str(numTweets) + "\ntweets"
-        Global.average_tweet_time = average24HrFormat + "\naverage tweet time"
-        Global.average_tweet_retweets = str(averageRetweets) + "\naverage retweets in tweets"
-        Global.average_tweet_favorites = str(averageFavorites) + "\naverage favorites in tweets"
+        Global.tweets = str(numTweets)
+        Global.average_tweet_time = average24HrFormat
+        Global.average_tweet_retweets = str(averageRetweets)
+        Global.average_tweet_favorites = str(averageFavorites)
         Global.most_tweets_per_day = most_tweets_per_day
         Global.most_tweets_day = most_tweets_day
         print("total amount of tweets: %s" % numTweets)
@@ -165,7 +184,7 @@ def get_user_info(screen_name):
     # get user's info
     user = api.get_user(screen_name)
     screen_name = user.screen_name
-    description = user.description
+    description = emoji_pattern.sub(r'', user.description)  # no emoji
     followers = user.followers_count
     following = user.friends_count
     profile_image_url = user.profile_image_url.replace("normal", "200x200")
@@ -175,15 +194,15 @@ def get_user_info(screen_name):
 
     # app = App.get_running_app()
     Global.image_url = profile_image_url
-    Global.screen_name = "@" + screen_name
+    Global.screen_name = screen_name
     if(description != ""):
         Global.description = description
     if(location != ""):
-        Global.location = "location: " + unidecode(location)
-    Global.verified = "verified: " + str(verified)
+        Global.location = unidecode(location)
+    Global.verified = str(verified)
     Global.created_at = str(created_at)
-    Global.followers = str(followers) + "\nfollowers"
-    Global.following = str(following) + "\nfollowing"
+    Global.followers = str(followers)
+    Global.following = str(following)
 
     print("screen name: %s" % screen_name)
     print("created at: %s" % created_at)
@@ -207,6 +226,7 @@ def get_user_info(screen_name):
             # print "%s follows %s back!" % (screen_name, follower.screen_name)
             followback_total += 1
     # print("total follows back: %d     followers: %d     num_follower: %d" % (followback_total, followers, num_follower))
+    Global.followback_total = followback_total
     if followers == MAX_RETRIEVE_FOLLOWERS or followers < MAX_RETRIEVE_FOLLOWERS:
         followback_percentage = (followback_total*100)/followers
         Global.followback_percentage = "from all of %s's %d followers, %d have been followed back, %d%% of them" % (screen_name, followers, followback_total, followback_percentage)
@@ -234,7 +254,8 @@ def generate_word_cloud(screen_name):
 
 if __name__ == '__main__':
     # pass in the username of the account you want to analyze
-    get_all_tweets(sys.argv[1])
-    get_user_info(sys.argv[1])
-    averages(sys.argv[1])
+    screen_name = sys.argv[1]
+    get_all_tweets(screen_name)
+    get_user_info(screen_name)
+    averages(screen_name)
     Twitter_AnalysisApp().run()

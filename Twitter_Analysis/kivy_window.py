@@ -29,19 +29,19 @@ class Widgets(FloatLayout):
         )
         self.add_widget(
             Label(
-                text=str(Global.screen_name),
+                text='@'+str(Global.screen_name),
                 pos=(-root.width*6, root.height*1.1)
             )
         )
         self.add_widget(
             Label(
-                text=str(Global.location),
+                text="location: "+str(Global.location),
                 pos=(-root.width*6, root.height*0.2)
             )
         )
         self.add_widget(
             Label(
-                text=str(Global.verified),
+                text="verified: "+str(Global.verified),
                 pos=(-root.width*6, -root.height*0.2)
             )
         )
@@ -53,37 +53,37 @@ class Widgets(FloatLayout):
         )
         self.add_widget(
             Label(
-                text=str(Global.tweets),
+                text=str(Global.tweets)+"\ntweets",
                 pos=(-root.width*3, root.height*3)
             )
         )
         self.add_widget(
             Label(
-                text=str(Global.followers),
+                text=str(Global.followers)+"\nfollowers",
                 pos=(-root.width, root.height*3)
             )
         )
         self.add_widget(
             Label(
-                text=str(Global.following),
+                text=str(Global.following)+"\nfollowing",
                 pos=(root.width, root.height*3)
             )
         )
         self.add_widget(
             Label(
-                text=str(Global.average_tweet_time),
+                text=str(Global.average_tweet_time)+"\naverage tweet time",
                 pos=(root.width*5, root.height*3)
             )
         )
         self.add_widget(
             Label(
-                text=str(Global.average_tweet_retweets),
+                text=str(Global.average_tweet_retweets)+"\naverage retweets in tweets",
                 pos=(root.width*5, root.height*2)
             )
         )
         self.add_widget(
             Label(
-                text=str(Global.average_tweet_favorites),
+                text=str(Global.average_tweet_favorites)+"\naverage favorites in tweets",
                 pos=(root.width*5, root.height)
             )
         )
@@ -109,13 +109,17 @@ class Widgets(FloatLayout):
         )
         self.add_widget(
             Label(
-                text="after that, time taken to make 1st tweet: "+str(Global.time_taken_1st_tweet),
+                text="after that, time taken to make 1st tweet: "+str(Global.time_taken_1st_tweet), # TODO: change messages according to the amount of tweets.
+                                                                                                    # If account has more than 3240 tweets, we're not really looking
+                                                                                                    # at the first tweet, only at the earliest one the Twitter API allows
                 pos=(-root.width*.6, root.height*.4)
             )
         )
         self.add_widget(
             Label(
-                text="after that, time taken for first 100 tweets: "+str(Global.time_taken_100_tweets),
+                text="after that, time taken for first 100 tweets: "+str(Global.time_taken_100_tweets), # TODO: change messages according to the amount of tweets.
+                                                                                                        # If account has more than 3240 tweets, we're not really looking
+                                                                                                        # at the first 100 tweets, only at the earliest one the Twitter API allows
                 pos=(-root.width*.6, root.height*.2)
             )
         )
