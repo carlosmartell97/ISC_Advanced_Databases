@@ -40,7 +40,7 @@ auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
 auth.set_access_token(ACCESS_KEY, ACCESS_SECRET)
 api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True)
 
-graph = Graph("http://localhost:7474/db/data/")
+graph = None
 
 def ensure_dir(file_path):
     directory = os.path.dirname(file_path)
@@ -182,7 +182,7 @@ def handle_limit(cursor):
             break
 
 
-def get_user_info(screen_name, passwrd):
+def get_user_info(screen_name):
     # get user's info
     user = api.get_user(screen_name)
     screen_name = user.screen_name
@@ -220,9 +220,6 @@ def get_user_info(screen_name, passwrd):
     num_follower = 0
     followback_total = 0
 
-    # set up authentication parameters
-    authenticate("localhost:7474", "neo4j", psswrd)
-
     tx = graph.cypher.begin()
     tx.append("OPTIONAL MATCH(n) WHERE n.name={target} RETURN CASE n WHEN null THEN 0 ELSE 1 END as result", target=screen_name)
     target_exists = tx.commit()[0][0][0]
@@ -245,7 +242,7 @@ def get_user_info(screen_name, passwrd):
         tx = graph.cypher.begin()
 
         tx = graph.cypher.begin()
-        tx.append("OPTIONAL MATCH(origin {name:{origin}}) -[rel:FOLLOWS]->(origin {name:{target}}) RETURN CASE rel WHEN null THEN 0 ELSE 1 END as result", origin=follower.screen_name, target=screen_name)
+        tx.append("OPTIONAL MATCH(origin {name:{origin}}) -[rel:FOLLOWS]->(target {name:{target}}) RETURN CASE rel WHEN null THEN 0 ELSE 1 END as result", origin=follower.screen_name, target=screen_name)
         relationship_exists = tx.commit()[0][0][0]
         tx = graph.cypher.begin()
 
@@ -273,7 +270,7 @@ def get_user_info(screen_name, passwrd):
         followback_percentage = (followback_total*100)/MAX_RETRIEVE_FOLLOWERS
         Global.followback_percentage = "from %s's newest %d followers, %d have been followed back, %d%% of them" % (screen_name, MAX_RETRIEVE_FOLLOWERS, followback_total, followback_percentage)
         print("from %s's newest %d followers, %d have been followed back, %d%% of them" % (screen_name, MAX_RETRIEVE_FOLLOWERS, followback_total, followback_percentage))
-
+    return user.screen_name
 
 def generate_word_cloud(screen_name):
     d = os.path.dirname(__file__)
@@ -305,10 +302,15 @@ def neo4j_follows(screen_name):
         origin = tx.commit()[0].one
     tx = graph.cypher.begin()
 
-    ids = []
-    for page in tweepy.Cursor(api.friends_ids, screen_name=screen_name).pages():
-        ids.extend(page)
-    screen_names = [user.screen_name for user in api.lookup_users(user_ids=ids)]
+    screen_names = []
+    MAX_RETRIEVE_FOLLOWING = 100
+    following_found = 0
+    for following in tweepy.Cursor(api.friends, screen_name=screen_name, count=100).items():
+        following_found += 1
+        # print "  following #" + str(following_found) + ": " + following.screen_name
+        if(following_found >= MAX_RETRIEVE_FOLLOWING):
+            break
+        screen_names.extend(following.screen_name)
     # print "SCREEN NAMES: "
     for follow_screen_name in screen_names:
         # print " "+follow_screen_name
@@ -340,8 +342,10 @@ if __name__ == '__main__':
     # pass in the username of the account you want to analyze and the password for your neo4j database
     screen_name = sys.argv[1]
     psswrd = sys.argv[2]
+    authenticate("localhost:7474", "neo4j", psswrd)
+    graph = Graph("http://localhost:7474/db/data/")
     get_all_tweets(screen_name)
-    get_user_info(screen_name, psswrd)
+    screen_name = get_user_info(screen_name)
     averages(screen_name)
     neo4j_follows(screen_name)
     Twitter_AnalysisApp().run()

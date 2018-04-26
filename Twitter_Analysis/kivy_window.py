@@ -47,7 +47,7 @@ class Widgets(FloatLayout):
         )
         self.add_widget(
             Label(
-                text="description: "+str(Global.description),
+                text="description:\n"+str(Global.description),
                 pos=(-root.width*6, -root.height*0.6)
             )
         )
