@@ -40,6 +40,7 @@ auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
 auth.set_access_token(ACCESS_KEY, ACCESS_SECRET)
 api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True)
 
+graph = Graph("http://localhost:7474/db/data/")
 
 def ensure_dir(file_path):
     directory = os.path.dirname(file_path)
@@ -181,7 +182,7 @@ def handle_limit(cursor):
             break
 
 
-def get_user_info(screen_name):
+def get_user_info(screen_name, passwrd):
     # get user's info
     user = api.get_user(screen_name)
     screen_name = user.screen_name
@@ -197,7 +198,7 @@ def get_user_info(screen_name):
     Global.image_url = profile_image_url
     Global.screen_name = screen_name
     if(description != ""):
-        Global.description = description
+        Global.description = unidecode(description)  # no accents
     if(location != ""):
         Global.location = unidecode(location)
     Global.verified = str(verified)
@@ -218,11 +219,47 @@ def get_user_info(screen_name):
     MAX_RETRIEVE_FOLLOWERS = 50
     num_follower = 0
     followback_total = 0
+
+    # set up authentication parameters
+    authenticate("localhost:7474", "neo4j", psswrd)
+
+    tx = graph.cypher.begin()
+    tx.append("OPTIONAL MATCH(n) WHERE n.name={target} RETURN CASE n WHEN null THEN 0 ELSE 1 END as result", target=screen_name)
+    target_exists = tx.commit()[0][0][0]
+    tx = graph.cypher.begin()
+    if(target_exists != 1):
+        tx.append("CREATE (target:Origin:User {name:{target}}) RETURN target", target=screen_name)
+        target = tx.commit()[0].one
+    else:
+        tx.append("MATCH(target) WHERE target.name={target} RETURN target", target=screen_name)
+        target = tx.commit()[0].one
+
     for follower in handle_limit(tweepy.Cursor(api.followers, screen_name=screen_name, count=MAX_RETRIEVE_FOLLOWERS).items()):
         num_follower += 1
         if(num_follower > MAX_RETRIEVE_FOLLOWERS):
             break
         # print "followed by: #%d %s" % (num_follower, follower.screen_name)
+        tx = graph.cypher.begin()
+        tx.append("OPTIONAL MATCH(n) WHERE n.name={origin} RETURN CASE n WHEN null THEN 0 ELSE 1 END as result", origin=follower.screen_name)
+        origin_exists = tx.commit()[0][0][0]
+        tx = graph.cypher.begin()
+
+        tx = graph.cypher.begin()
+        tx.append("OPTIONAL MATCH(origin {name:{origin}}) -[rel:FOLLOWS]->(origin {name:{target}}) RETURN CASE rel WHEN null THEN 0 ELSE 1 END as result", origin=follower.screen_name, target=screen_name)
+        relationship_exists = tx.commit()[0][0][0]
+        tx = graph.cypher.begin()
+
+        if(origin_exists != 1):
+            # print "   node doesnt exist yet"
+            tx.append("CREATE (origin:User {name:{origin}}) RETURN origin", origin=follower.screen_name)
+            tx.commit()
+            tx = graph.cypher.begin()
+        if(relationship_exists != 1):
+            # print "   relationship doesnt exist yet"
+            tx.append("MATCH(origin) where origin.name={origin} RETURN origin", origin=follower.screen_name)
+            origin = tx.commit()[0].one
+            follows_relationship = Path(origin, "FOLLOWS", target)
+            graph.create(follows_relationship)
         if api.show_friendship(source_screen_name=screen_name, target_screen_name=follower.screen_name)[0].following:  # user follows back this follower
             # print "%s follows %s back!" % (screen_name, follower.screen_name)
             followback_total += 1
@@ -253,18 +290,14 @@ def generate_word_cloud(screen_name):
     Global.wordcloud_image = "png/"+screen_name+"_word_cloud.png"
 
 
-def neo4j_follows(screen_name, psswrd):
+def neo4j_follows(screen_name):
     print("analyzing follows of %s..." % screen_name)
-
-    # set up authentication parameters
-    authenticate("localhost:7474", "neo4j", psswrd)
-    graph = Graph("http://localhost:7474/db/data/")
 
     tx = graph.cypher.begin()
     tx.append("OPTIONAL MATCH(n) WHERE n.name={origin} RETURN CASE n WHEN null THEN 0 ELSE 1 END as result", origin=screen_name)
-    exists = tx.commit()[0][0][0]
+    origin_exists = tx.commit()[0][0][0]
     tx = graph.cypher.begin()
-    if(exists != 1):
+    if(origin_exists != 1):
         tx.append("CREATE (origin:Origin:User {name:{origin}}) RETURN origin", origin=screen_name)
         origin = tx.commit()[0].one
     else:
@@ -282,7 +315,7 @@ def neo4j_follows(screen_name, psswrd):
 
         tx = graph.cypher.begin()
         tx.append("OPTIONAL MATCH(n) WHERE n.name={target} RETURN CASE n WHEN null THEN 0 ELSE 1 END as result", target=follow_screen_name)
-        node_exists = tx.commit()[0][0][0]
+        target_exists = tx.commit()[0][0][0]
         tx = graph.cypher.begin()
 
         tx = graph.cypher.begin()
@@ -290,7 +323,7 @@ def neo4j_follows(screen_name, psswrd):
         relationship_exists = tx.commit()[0][0][0]
         tx = graph.cypher.begin()
 
-        if(node_exists != 1):
+        if(target_exists != 1):
             # print "   node doesnt exist yet"
             tx.append("CREATE (target:User {name:{target}}) RETURN target", target=follow_screen_name)
             tx.commit()
@@ -304,11 +337,11 @@ def neo4j_follows(screen_name, psswrd):
 
 
 if __name__ == '__main__':
-    # pass in the username of the account you want to analyze
+    # pass in the username of the account you want to analyze and the password for your neo4j database
     screen_name = sys.argv[1]
     psswrd = sys.argv[2]
     get_all_tweets(screen_name)
-    get_user_info(screen_name)
+    get_user_info(screen_name, psswrd)
     averages(screen_name)
-    neo4j_follows(screen_name, psswrd)
+    neo4j_follows(screen_name)
     Twitter_AnalysisApp().run()
