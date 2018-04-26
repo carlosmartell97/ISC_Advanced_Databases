@@ -27,5 +27,8 @@ RUN yum install python-pip -y
 # RUN pip install unidecode
 # pip install tweepy
 # pip install wordcloud
+
+# pip install py2neo
+
 # cat /etc/centos-release
 # rpm --query centos-release

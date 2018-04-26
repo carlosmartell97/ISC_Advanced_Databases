@@ -14,6 +14,7 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import itertools
 import re
+from py2neo import Graph, authenticate, Path
 
 # Configuration file
 abs_path = os.path.dirname(os.path.realpath(__file__)) + '/'
@@ -252,10 +253,62 @@ def generate_word_cloud(screen_name):
     Global.wordcloud_image = "png/"+screen_name+"_word_cloud.png"
 
 
+def neo4j_follows(screen_name, psswrd):
+    print("analyzing follows of %s..." % screen_name)
+
+    # set up authentication parameters
+    authenticate("localhost:7474", "neo4j", psswrd)
+    graph = Graph("http://localhost:7474/db/data/")
+
+    tx = graph.cypher.begin()
+    tx.append("OPTIONAL MATCH(n) WHERE n.name={origin} RETURN CASE n WHEN null THEN 0 ELSE 1 END as result", origin=screen_name)
+    exists = tx.commit()[0][0][0]
+    tx = graph.cypher.begin()
+    if(exists != 1):
+        tx.append("CREATE (origin:Origin:User {name:{origin}}) RETURN origin", origin=screen_name)
+        origin = tx.commit()[0].one
+    else:
+        tx.append("MATCH(origin) WHERE origin.name={origin} SET origin:Origin:User RETURN origin", origin=screen_name)
+        origin = tx.commit()[0].one
+    tx = graph.cypher.begin()
+
+    ids = []
+    for page in tweepy.Cursor(api.friends_ids, screen_name=screen_name).pages():
+        ids.extend(page)
+    screen_names = [user.screen_name for user in api.lookup_users(user_ids=ids)]
+    # print "SCREEN NAMES: "
+    for follow_screen_name in screen_names:
+        # print " "+follow_screen_name
+
+        tx = graph.cypher.begin()
+        tx.append("OPTIONAL MATCH(n) WHERE n.name={target} RETURN CASE n WHEN null THEN 0 ELSE 1 END as result", target=follow_screen_name)
+        node_exists = tx.commit()[0][0][0]
+        tx = graph.cypher.begin()
+
+        tx = graph.cypher.begin()
+        tx.append("OPTIONAL MATCH(origin {name:{origin}}) -[rel:FOLLOWS]->(target {name:{target}}) RETURN CASE rel WHEN null THEN 0 ELSE 1 END as result", origin=screen_name, target=follow_screen_name)
+        relationship_exists = tx.commit()[0][0][0]
+        tx = graph.cypher.begin()
+
+        if(node_exists != 1):
+            # print "   node doesnt exist yet"
+            tx.append("CREATE (target:User {name:{target}}) RETURN target", target=follow_screen_name)
+            tx.commit()
+            tx = graph.cypher.begin()
+        if(relationship_exists != 1):
+            # print "   relationship doesnt exist yet"
+            tx.append("MATCH(target) where target.name={target} RETURN target", target=follow_screen_name)
+            target = tx.commit()[0].one
+            follows_relationship = Path(origin, "FOLLOWS", target)
+            graph.create(follows_relationship)
+
+
 if __name__ == '__main__':
     # pass in the username of the account you want to analyze
     screen_name = sys.argv[1]
+    psswrd = sys.argv[2]
     get_all_tweets(screen_name)
     get_user_info(screen_name)
     averages(screen_name)
+    neo4j_follows(screen_name, psswrd)
     Twitter_AnalysisApp().run()
