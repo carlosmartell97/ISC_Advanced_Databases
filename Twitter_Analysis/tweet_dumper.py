@@ -93,7 +93,7 @@ def getSeconds(time_str):
     return int(h)*3600 + int(m)*60 + int(s)
 
 
-def averages(screen_name):
+def analyze_csv(screen_name):
     with open("csv/"+screen_name+'_tweets.csv') as csvfile:
         readCSV = csv.reader(csvfile, delimiter=',')
         rows = 0
@@ -114,6 +114,8 @@ def averages(screen_name):
             tweetText = row[4]
             if(tweetText != "text"):
                 tweets_file.write(tweetText+"\n\n")
+                if(rows < 7):
+                    Global.five_latest_tweets[rows-2] = tweetText
             if(date != "created_at"):  # skip first line
                 totalTime += getSeconds(date[11: len(date)])
                 date_obj = datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
@@ -310,7 +312,7 @@ def neo4j_follows(screen_name):
         # print "  following #" + str(following_found) + ": " + following.screen_name
         if(following_found >= MAX_RETRIEVE_FOLLOWING):
             break
-        screen_names.extend(following.screen_name)
+        screen_names.append(following.screen_name)
     # print "SCREEN NAMES: "
     for follow_screen_name in screen_names:
         # print " "+follow_screen_name
@@ -346,6 +348,6 @@ if __name__ == '__main__':
     graph = Graph("http://localhost:7474/db/data/")
     get_all_tweets(screen_name)
     screen_name = get_user_info(screen_name)
-    averages(screen_name)
+    analyze_csv(screen_name)
     neo4j_follows(screen_name)
     Twitter_AnalysisApp().run()

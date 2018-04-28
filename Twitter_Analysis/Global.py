@@ -3,7 +3,7 @@
 image_url = "?"
 screen_name = "?"
 description = "?"
-location = "location: ?"
+location = "?"
 verified = "?"
 created_at = "?"
 tweets = "?"
@@ -19,3 +19,4 @@ most_tweets_per_day = "?"
 most_tweets_day = "?"
 time_taken_1st_tweet = "?"
 time_taken_100_tweets = "?"
+five_latest_tweets = ["?", "?", "?", "?", "?"]

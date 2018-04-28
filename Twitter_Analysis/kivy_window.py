@@ -6,16 +6,19 @@ from kivy.uix.image import AsyncImage
 from kivy.uix.image import Image
 from kivy.uix.widget import Widget
 from kivy.config import Config
+from kivy.uix.carousel import Carousel
+import threading
 import Global
 
 
 class Widgets(FloatLayout):
+    run_carousel = True
 
     def __init__(self, **kwargs):
         # make sure we aren't overriding any important functionality
         super(Widgets, self).__init__(**kwargs)
-        Config.set('graphics', 'width', '1500')
-        Config.set('graphics', 'height', '800')
+        Config.set('graphics', 'width', '1800')
+        Config.set('graphics', 'height', '900')
         Config.write()
 
         root = Widget()
@@ -24,79 +27,79 @@ class Widgets(FloatLayout):
         self.add_widget(
             AsyncImage(
                 source=str(Global.image_url),
-                pos=(-root.width*6, root.height*2.5)
+                pos=(-root.width*6, root.height*3.25)
             )
         )
         self.add_widget(
             Label(
                 text='@'+str(Global.screen_name),
-                pos=(-root.width*6, root.height*1.1)
+                pos=(-root.width*6, root.height*2)
             )
         )
         self.add_widget(
             Label(
                 text="location: "+str(Global.location),
-                pos=(-root.width*6, root.height*0.2)
+                pos=(-root.width*6, root.height*1.3)
             )
         )
         self.add_widget(
             Label(
                 text="verified: "+str(Global.verified),
-                pos=(-root.width*6, -root.height*0.2)
+                pos=(-root.width*6, root.height*0.9)
             )
         )
         self.add_widget(
             Label(
                 text="description:\n"+str(Global.description),
-                pos=(-root.width*6, -root.height*0.6)
+                pos=(-root.width*6, root.height*0.4)
             )
         )
         self.add_widget(
             Label(
                 text=str(Global.tweets)+"\ntweets",
-                pos=(-root.width*3, root.height*3)
+                pos=(-root.width*3, root.height*3.5)
             )
         )
         self.add_widget(
             Label(
                 text=str(Global.followers)+"\nfollowers",
-                pos=(-root.width, root.height*3)
+                pos=(-root.width, root.height*3.5)
             )
         )
         self.add_widget(
             Label(
                 text=str(Global.following)+"\nfollowing",
-                pos=(root.width, root.height*3)
+                pos=(root.width, root.height*3.5)
             )
         )
         self.add_widget(
             Label(
                 text=str(Global.average_tweet_time)+"\naverage tweet time",
-                pos=(root.width*5, root.height*3)
+                pos=(root.width*5, root.height*4)
             )
         )
         self.add_widget(
             Label(
                 text=str(Global.average_tweet_retweets)+"\naverage retweets in tweets",
-                pos=(root.width*5, root.height*2)
+                pos=(root.width*5, root.height*3)
             )
         )
         self.add_widget(
             Label(
                 text=str(Global.average_tweet_favorites)+"\naverage favorites in tweets",
-                pos=(root.width*5, root.height)
+                pos=(root.width*5, root.height*2)
             )
         )
         self.add_widget(
             Label(
                 text=str(Global.followback_percentage),
-                pos=(-root.width*.4, root.height)
+                pos=(-root.width*.4, root.height*1.5)
             )
         )
         self.add_widget(
             Image(
                 source=str(Global.wordcloud_image),
-                pos=(root.width*2, root.height*.2),
+                pos=(root.width*2, root.height),
                 size_hint_y=None,
                 height=350
             )
@@ -104,7 +107,7 @@ class Widgets(FloatLayout):
         self.add_widget(
             Label(
                 text="on Twitter since: "+str(Global.created_at),
-                pos=(-root.width*.6, root.height*.6)
+                pos=(-root.width*.6, root.height*1.2)
             )
         )
         self.add_widget(
@@ -112,7 +115,7 @@ class Widgets(FloatLayout):
                 text="after that, time taken to make 1st tweet: "+str(Global.time_taken_1st_tweet), # TODO: change messages according to the amount of tweets.
                                                                                                     # If account has more than 3240 tweets, we're not really looking
                                                                                                     # at the first tweet, only at the earliest one the Twitter API allows
-                pos=(-root.width*.6, root.height*.4)
+                pos=(-root.width*.6, root.height)
             )
         )
         self.add_widget(
@@ -120,15 +123,40 @@ class Widgets(FloatLayout):
                 text="after that, time taken for first 100 tweets: "+str(Global.time_taken_100_tweets), # TODO: change messages according to the amount of tweets.
                                                                                                         # If account has more than 3240 tweets, we're not really looking
                                                                                                         # at the first 100 tweets, only at the earliest one the Twitter API allows
-                pos=(-root.width*.6, root.height*.2)
+                pos=(-root.width*.6, root.height*.8)
             )
         )
         self.add_widget(
             Label(
                 text="most tweets per day: "+str(Global.most_tweets_per_day)+" on "+str(Global.most_tweets_day),
-                pos=(-root.width*.6, 0)
+                pos=(-root.width*.6, root.height*0.6)
             )
         )
+        self.add_widget(
+            Label(
+                text="5 most recent tweets: ",
+                pos=(-root.width*.6, -root.height*3.7)
+            )
+        )
+        carousel = Carousel(direction='right')
+        for i in range(5):
+            carousel.add_widget(
+                Label(
+                    text="#"+str(i+1)+":\n"+Global.five_latest_tweets[i],
+                    pos=(-root.width*.6, -root.height*4)
+                )
+            )
+        carousel.disabled = True
+        carousel.opacity = 6
+        carousel.loop = True
+        self.add_widget(carousel)
+
+        def printit():
+            if(self.run_carousel):
+                threading.Timer(5.0, printit).start()
+                # print "RUNNING THREAD!"
+                carousel.load_next(mode='next')
+        printit()
 
 
 class Twitter_AnalysisApp(App):
@@ -145,6 +173,11 @@ class Twitter_AnalysisApp(App):
     def _update_rect(self, instance, value):
         self.rect.pos = instance.pos
         self.rect.size = instance.size
+
+    def on_stop(self):
+        Widgets.run_carousel = False
+        # print "NOW STOPPING....."
+        pass
 
 
 if __name__ == '__main__':
