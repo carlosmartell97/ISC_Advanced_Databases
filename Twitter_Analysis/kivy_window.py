@@ -9,6 +9,7 @@ from kivy.config import Config
 from kivy.uix.carousel import Carousel
 import threading
 import Global
+import timeline
 
 
 class Widgets(FloatLayout):
@@ -99,7 +100,7 @@ class Widgets(FloatLayout):
         self.add_widget(
             Image(
                 source=str(Global.wordcloud_image),
-                pos=(root.width*2, root.height),
+                pos=(-root.width*2, root.height),
                 size_hint_y=None,
                 height=350
             )
@@ -150,6 +151,16 @@ class Widgets(FloatLayout):
         carousel.opacity = 6
         carousel.loop = True
         self.add_widget(carousel)
+
+        timeline.create()
+        self.add_widget(
+            Image(
+                source='png/'+str(Global.screen_name)+'_gantt.png',
+                pos=(root.width*5, root.height*1.5),
+                size_hint_y=None,
+                height=400
+            )
+        )
 
         def printit():
             if(self.run_carousel):

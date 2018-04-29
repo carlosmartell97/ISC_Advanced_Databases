@@ -142,6 +142,8 @@ def analyze_csv(screen_name):
             row_1 = next(itertools.islice(readCSV, numTweets, numTweets+1))
             print(" 1st tweet: %s" % row_1[4])
             first_tweet_date = datetime.datetime.strptime(row_1[1], "%Y-%m-%d %H:%M:%S")
+            Global.first_tweet_month = first_tweet_date.month
+            Global.first_tweet_year = first_tweet_date.year
             account_created_date = datetime.datetime.strptime(Global.created_at, "%Y-%m-%d %H:%M:%S")
             date_delta = first_tweet_date - account_created_date
             print("1st tweet date: %s" % first_tweet_date)
@@ -153,6 +155,8 @@ def analyze_csv(screen_name):
             row_100 = next(itertools.islice(readCSV, numTweets-100, numTweets-99))
             print(" 100th tweet: %s" % row_100[4])
             tweet_100_date = datetime.datetime.strptime(row_100[1], "%Y-%m-%d %H:%M:%S")
+            Global.cien_tweet_month = tweet_100_date.month
+            Global.cien_tweet_year = tweet_100_date.year
             date_delta = tweet_100_date - first_tweet_date
             print("100th tweet date: %s" % tweet_100_date)
             print("1st tweet date date: %s" % first_tweet_date)
@@ -205,6 +209,8 @@ def get_user_info(screen_name):
         Global.location = unidecode(location)
     Global.verified = str(verified)
     Global.created_at = str(created_at)
+    Global.created_at_month = created_at.month
+    Global.created_at_year = created_at.year
     Global.followers = str(followers)
     Global.following = str(following)
 
@@ -237,7 +243,11 @@ def get_user_info(screen_name):
         num_follower += 1
         if(num_follower > MAX_RETRIEVE_FOLLOWERS):
             break
-        # print "followed by: #%d %s" % (num_follower, follower.screen_name)
+        print "followed by: #%d %s" % (num_follower, follower.screen_name)
+        print "  tweets: %d" % follower.statuses_count
+        print "  followers: %d" % follower.followers_count
+        print "  following: %d" % follower.friends_count
+        print "  location: %s" % follower.location
         tx = graph.cypher.begin()
         tx.append("OPTIONAL MATCH(n) WHERE n.name={origin} RETURN CASE n WHEN null THEN 0 ELSE 1 END as result", origin=follower.screen_name)
         origin_exists = tx.commit()[0][0][0]
@@ -346,8 +356,8 @@ if __name__ == '__main__':
     psswrd = sys.argv[2]
     authenticate("localhost:7474", "neo4j", psswrd)
     graph = Graph("http://localhost:7474/db/data/")
-    get_all_tweets(screen_name)
     screen_name = get_user_info(screen_name)
+    get_all_tweets(screen_name)
     analyze_csv(screen_name)
     neo4j_follows(screen_name)
     Twitter_AnalysisApp().run()
