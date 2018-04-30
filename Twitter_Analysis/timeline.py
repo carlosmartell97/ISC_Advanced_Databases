@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
 import matplotlib.dates
 import Global
-from matplotlib.dates import MONTHLY, YEARLY, DateFormatter, rrulewrapper, RRuleLocator
+from matplotlib.dates import MONTHLY, DateFormatter, rrulewrapper, RRuleLocator
 
 from pylab import *
 

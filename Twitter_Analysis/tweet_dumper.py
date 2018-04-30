@@ -116,6 +116,9 @@ def analyze_csv(screen_name):
                 tweets_file.write(tweetText+"\n\n")
                 if(rows < 7):
                     Global.five_latest_tweets[rows-2] = tweetText
+                    Global.five_latest_dates[rows-2] = str(date).split(' ')[0]
+                    Global.five_latest_retweets[rows-2] = retweets
+                    Global.five_latest_likes[rows-2] = favorites
             if(date != "created_at"):  # skip first line
                 totalTime += getSeconds(date[11: len(date)])
                 date_obj = datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")

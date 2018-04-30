@@ -136,17 +136,61 @@ class Widgets(FloatLayout):
         self.add_widget(
             Label(
                 text="5 most recent tweets: ",
-                pos=(-root.width*.6, -root.height*3.7)
+                pos=(-root.width*.6, -root.height*3.5)
             )
         )
         carousel = Carousel(direction='right')
         for i in range(5):
-            carousel.add_widget(
+            tweet_layout = FloatLayout()
+            tweet_layout.add_widget(
                 Label(
                     text="#"+str(i+1)+":\n"+Global.five_latest_tweets[i],
-                    pos=(-root.width*.6, -root.height*4)
+                    pos=(-root.width*.6, -root.height*3.8)
                 )
             )
+            tweet_layout.add_widget(
+                Image(
+                source=str('img/date.png'),
+                pos=(-root.width*1.8, 0),
+                size_hint_y=None,
+                height=35
+                )
+            )
+            tweet_layout.add_widget(
+                Image(
+                    source=str('img/retweets.png'),
+                    pos=(-root.width*0.5, 0),
+                    size_hint_y=None,
+                    height=35
+                )
+            )
+            tweet_layout.add_widget(
+                Image(
+                    source=str('img/likes.png'),
+                    pos=(root.width*0.2, 0),
+                    size_hint_y=None,
+                    height=35
+                )
+            )
+            tweet_layout.add_widget(
+                Label(
+                    text=Global.five_latest_dates[i],
+                    pos=(-root.width*1.2, -root.height*4.32)
+                )
+            )
+            tweet_layout.add_widget(
+                Label(
+                    text=Global.five_latest_retweets[i],
+                    pos=(-root.width*0.2, -root.height*4.32)
+                )
+            )
+            tweet_layout.add_widget(
+                Label(
+                    text=Global.five_latest_likes[i],
+                    pos=(root.width*0.5, -root.height*4.32)
+                )
+            )
+            carousel.add_widget(tweet_layout)
         carousel.disabled = True
         carousel.opacity = 6
         carousel.loop = True
