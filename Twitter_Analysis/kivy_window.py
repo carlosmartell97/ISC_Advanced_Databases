@@ -46,13 +46,19 @@ class Widgets(FloatLayout):
         self.add_widget(
             Label(
                 text="verified: "+str(Global.verified),
-                pos=(-root.width*6, root.height*0.9)
+                pos=(-root.width*6, root.height)
+            )
+        )
+        self.add_widget(
+            Label(
+                text="on Twitter since: "+str(Global.created_at),
+                pos=(-root.width*6, root.height*0.7)
             )
         )
         self.add_widget(
             Label(
                 text="description:\n"+str(Global.description),
-                pos=(-root.width*6, root.height*0.4)
+                pos=(-root.width*6, root.height*0.3)
             )
         )
         self.add_widget(
@@ -99,34 +105,21 @@ class Widgets(FloatLayout):
         )
         self.add_widget(
             Image(
-                source=str(Global.wordcloud_image),
-                pos=(-root.width*2, root.height),
+                source=str(Global.wordcloud_tweets_image),
+                pos=(root.width*0.35, root.height),
                 size_hint_y=None,
                 height=350
             )
         )
-        self.add_widget(
-            Label(
-                text="on Twitter since: "+str(Global.created_at),
-                pos=(-root.width*.6, root.height*1.2)
+        if(Global.hashtags_found > 0):
+            self.add_widget(
+                Image(
+                    source=str(Global.wordcloud_hashtags_image),
+                    pos=(-root.width*6, root.height),
+                    size_hint_y=None,
+                    height=350
+                )
             )
-        )
-        self.add_widget(
-            Label(
-                text="after that, time taken to make 1st tweet: "+str(Global.time_taken_1st_tweet), # TODO: change messages according to the amount of tweets.
-                                                                                                    # If account has more than 3240 tweets, we're not really looking
-                                                                                                    # at the first tweet, only at the earliest one the Twitter API allows
-                pos=(-root.width*.6, root.height)
-            )
-        )
-        self.add_widget(
-            Label(
-                text="after that, time taken for first 100 tweets: "+str(Global.time_taken_100_tweets), # TODO: change messages according to the amount of tweets.
-                                                                                                        # If account has more than 3240 tweets, we're not really looking
-                                                                                                        # at the first 100 tweets, only at the earliest one the Twitter API allows
-                pos=(-root.width*.6, root.height*.8)
-            )
-        )
         self.add_widget(
             Label(
                 text="most tweets per day: "+str(Global.most_tweets_per_day)+" on "+str(Global.most_tweets_day),
@@ -195,16 +188,30 @@ class Widgets(FloatLayout):
         carousel.opacity = 6
         carousel.loop = True
         self.add_widget(carousel)
-
         timeline.create()
         self.add_widget(
             Image(
                 source='png/'+str(Global.screen_name)+'_gantt.png',
-                pos=(root.width*5, root.height*1.5),
+                pos=(root.width*6.35, root.height*1.5),
                 size_hint_y=None,
-                height=400
+                height=380
             )
         )
+        if(Global.fishy_followers != 0):
+            self.add_widget(
+                Image(
+                    source='img/warning.png',
+                    pos=(-root.width*2, root.height*6.5),
+                    size_hint_y=None,
+                    height=35
+                )
+            )
+            self.add_widget(
+                Label(
+                    text=str(Global.fishy_followers)+" fishy followers found",
+                    pos=(-root.width*1, root.height*2.15)
+                )
+            )
 
         def printit():
             if(self.run_carousel):

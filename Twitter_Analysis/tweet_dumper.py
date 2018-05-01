@@ -79,6 +79,19 @@ def get_all_tweets(screen_name):
 
     # transform the tweepy tweets into a 2D array that will populate the csv
     outtweets = [[tweet.id_str, tweet.created_at, tweet.retweet_count, tweet.favorite_count, tweet.text.encode("utf-8")] for tweet in alltweets]
+    # print dir(tweet.entities)
+    hashtags_found = 0
+    hashtags_file = open("txt/"+screen_name+"_hashtags_only.txt", "w")
+    for tweet in alltweets:
+        # print " HASHTAGS: "+str(tweet.entities['hashtags'])
+        hashtags = tweet.entities['hashtags']
+        for hashtag in hashtags:
+            print "   #"+hashtag['text']
+            hashtags_file.write(unidecode(hashtag['text'])+"\n")
+            hashtags_found += 1
+    hashtags_file.close()
+    Global.hashtags_found = hashtags_found
+
 
     # write the csv
     with open("csv/"+'%s_tweets.csv' % screen_name, 'wb') as f:
@@ -138,7 +151,9 @@ def analyze_csv(screen_name):
             if(favorites != "favorites"):  # skip first line
                 totalFavorites += int(favorites)
         tweets_file.close()
-        generate_word_cloud(screen_name)
+        generate_word_cloud(screen_name, "tweets")
+        if(Global.hashtags_found > 0):
+            generate_word_cloud(screen_name, "hashtags")
         numTweets = rows - 1
         if(numTweets >= 1):
             readCSV = csv.reader(open("csv/"+screen_name+'_tweets.csv'), delimiter=',')
@@ -152,7 +167,18 @@ def analyze_csv(screen_name):
             print("1st tweet date: %s" % first_tweet_date)
             print("account created date: %s" % account_created_date)
             print("time taken to make 1st tweet: %s DAYS %s SECONDS" % (str(date_delta.days), str(date_delta.seconds)))
-            Global.time_taken_1st_tweet = "%s DAYS %s SECONDS" % (str(date_delta.days), str(date_delta.seconds))
+            if(date_delta.days > 364):  # more than a year
+                Global.time_taken_1st_tweet = "{0:.1f} YEARS".format(date_delta.days/365.00)
+            elif(date_delta.days > 30):  # mora than a month
+                Global.time_taken_1st_tweet = "{0:.1f} MONTHS".format(date_delta.days/30.00)
+            elif(date_delta.days > 0):  # more than a day
+                Global.time_taken_1st_tweet = "%d DAYS" % date_delta.days
+            elif(date_delta.seconds > 3599):  # more than an hour
+                Global.time_taken_1st_tweet = "{0:.1f} HOURS".format(date_delta.seconds/3600)
+            elif(date_delta.seconds > 59):  # more than a minute
+                Global.time_taken_1st_tweet = "{0:.1f} MINUTES".format(date_delta.seconds/60)
+            else:  # more than a second
+                Global.time_taken_1st_tweet = "%d SECONDS" % date_delta.seconds
         if(numTweets >= 100):
             readCSV = csv.reader(open("csv/"+screen_name+'_tweets.csv'), delimiter=',')
             row_100 = next(itertools.islice(readCSV, numTweets-100, numTweets-99))
@@ -164,7 +190,18 @@ def analyze_csv(screen_name):
             print("100th tweet date: %s" % tweet_100_date)
             print("1st tweet date date: %s" % first_tweet_date)
             print("from then, time taken to make 100 tweets: %s DAYS %s SECONDS" % (str(date_delta.days), str(date_delta.seconds)))
-            Global.time_taken_100_tweets = "%s DAYS %s SECONDS" % (str(date_delta.days), str(date_delta.seconds))
+            if(date_delta.days > 364):
+                Global.time_taken_100_tweets = "{0:.1f} YEARS".format(date_delta.days/365.00)
+            elif(date_delta.days > 30):
+                Global.time_taken_100_tweets = "{0:.1f} MONTHS".format(date_delta.days/30.00)
+            elif(date_delta.days > 0):  # more than a day
+                Global.time_taken_100_tweets = "%d DAYS" % date_delta.days
+            elif(date_delta.seconds > 3599):  # more than an hour
+                Global.time_taken_100_tweets = "{0:.1f} HOURS".format(date_delta.seconds/3600)
+            elif(date_delta.seconds > 59):  # more than a minute
+                Global.time_taken_100_tweets = "{0:.1f} MINUTES".format(date_delta.seconds/60)
+            else:  # more than a second
+                Global.time_taken_100_tweets = "%d SECONDS" % date_delta.seconds
         averageSeconds = totalTime/numTweets  # don't count the first line
         average24HrFormat = str(datetime.timedelta(seconds=averageSeconds))
         averageRetweets = totalRetweets/(numTweets)  # don't count the first line
@@ -241,7 +278,7 @@ def get_user_info(screen_name):
     else:
         tx.append("MATCH(target) WHERE target.name={target} RETURN target", target=screen_name)
         target = tx.commit()[0].one
-
+    fishy_followers = 0
     for follower in handle_limit(tweepy.Cursor(api.followers, screen_name=screen_name, count=MAX_RETRIEVE_FOLLOWERS).items()):
         num_follower += 1
         if(num_follower > MAX_RETRIEVE_FOLLOWERS):
@@ -251,6 +288,9 @@ def get_user_info(screen_name):
         print "  followers: %d" % follower.followers_count
         print "  following: %d" % follower.friends_count
         print "  location: %s" % follower.location
+        if(follower.statuses_count == 0 and follower.followers_count < 10):
+            print "  FISHY follower..."
+            fishy_followers += 1
         tx = graph.cypher.begin()
         tx.append("OPTIONAL MATCH(n) WHERE n.name={origin} RETURN CASE n WHEN null THEN 0 ELSE 1 END as result", origin=follower.screen_name)
         origin_exists = tx.commit()[0][0][0]
@@ -277,6 +317,7 @@ def get_user_info(screen_name):
             followback_total += 1
     # print("total follows back: %d     followers: %d     num_follower: %d" % (followback_total, followers, num_follower))
     Global.followback_total = followback_total
+    Global.fishy_followers = fishy_followers
     if followers == MAX_RETRIEVE_FOLLOWERS or followers < MAX_RETRIEVE_FOLLOWERS:
         followback_percentage = (followback_total*100)/followers
         Global.followback_percentage = "from all of %s's %d followers, %d have been followed back, %d%% of them" % (screen_name, followers, followback_total, followback_percentage)
@@ -287,20 +328,23 @@ def get_user_info(screen_name):
         print("from %s's newest %d followers, %d have been followed back, %d%% of them" % (screen_name, MAX_RETRIEVE_FOLLOWERS, followback_total, followback_percentage))
     return user.screen_name
 
-def generate_word_cloud(screen_name):
+
+def generate_word_cloud(screen_name, type):
     d = os.path.dirname(__file__)
 
     # Read the whole text.
-    tweetsText = open(os.path.join(d, "txt/"+screen_name+"_tweets_only.txt")).read()
+    tweetsText = open(os.path.join(d, "txt/"+screen_name+"_"+type+"_only.txt")).read()
 
-    wordcloud = WordCloud(max_font_size=40).generate(tweetsText)
+    wordcloud = WordCloud(max_font_size=40, collocations=False).generate(tweetsText)
     figure = plt.figure(dpi=300)
     plt.imshow(wordcloud, interpolation="bilinear")
     plt.axis("off")
     # plt.show()
-    figure.savefig("png/"+screen_name+"_word_cloud.png", bbox_inches='tight', transparent=True, pad_inches=0, dpi=300)
-    Global.wordcloud_image = "png/"+screen_name+"_word_cloud.png"
-
+    figure.savefig("png/"+screen_name+"_"+type+"_word_cloud.png", bbox_inches='tight', transparent=True, pad_inches=0, dpi=300)
+    if(type == "tweets"):
+        Global.wordcloud_tweets_image = "png/"+screen_name+"_tweets_word_cloud.png"
+    else:
+        Global.wordcloud_hashtags_image = "png/"+screen_name+"_hashtags_word_cloud.png"
 
 def neo4j_follows(screen_name):
     print("analyzing follows of %s..." % screen_name)
