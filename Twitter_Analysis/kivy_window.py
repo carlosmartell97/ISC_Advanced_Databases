@@ -208,8 +208,8 @@ class Widgets(FloatLayout):
             )
             self.add_widget(
                 Label(
-                    text=str(Global.fishy_followers)+" fishy followers found",
-                    pos=(-root.width*1, root.height*2.15)
+                    text=str(Global.fishy_followers)+" suspicious followers found",
+                    pos=(-root.width*0.8, root.height*2.15)
                 )
             )
 
