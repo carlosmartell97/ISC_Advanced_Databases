@@ -86,7 +86,7 @@ def get_all_tweets(screen_name):
         # print " HASHTAGS: "+str(tweet.entities['hashtags'])
         hashtags = tweet.entities['hashtags']
         for hashtag in hashtags:
-            print "   #"+hashtag['text']
+            print ("   #"+hashtag['text'])
             hashtags_file.write(unidecode(hashtag['text'])+"\n")
             hashtags_found += 1
     hashtags_file.close()
@@ -339,7 +339,7 @@ def handle_limit(cursor):
             yield cursor.next()
         except tweepy.RateLimitError:
             # time.sleep(15 * 60)  # wait encouraged 15 minutes
-            print "Rate limit reached!"
+            print ("Rate limit reached!")
             break
 
 
@@ -398,13 +398,13 @@ def get_user_info(screen_name):
         num_follower += 1
         if(num_follower > MAX_RETRIEVE_FOLLOWERS):
             break
-        print "followed by: #%d %s" % (num_follower, follower.screen_name)
-        print "  tweets: %d" % follower.statuses_count
-        print "  followers: %d" % follower.followers_count
-        print "  following: %d" % follower.friends_count
-        print "  location: %s" % follower.location
+        print ("followed by: #%d %s" % (num_follower, follower.screen_name))
+        print ("  tweets: %d" % follower.statuses_count)
+        print ("  followers: %d" % follower.followers_count)
+        print ("  following: %d" % follower.friends_count)
+        print ("  location: %s" % follower.location)
         if(follower.statuses_count == 0 and follower.followers_count < 10):
-            print "  FISHY follower..."
+            print ("  FISHY follower...")
             fishy_followers += 1
         tx = graph.cypher.begin()
         tx.append("OPTIONAL MATCH(n) WHERE n.name={origin} RETURN CASE n WHEN null THEN 0 ELSE 1 END as result", origin=follower.screen_name)
