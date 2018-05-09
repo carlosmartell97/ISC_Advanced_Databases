@@ -2,3 +2,4 @@ config_secret.json
 *.csv
 *.txt
 *.png
+*.exe
