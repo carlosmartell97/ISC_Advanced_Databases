@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>CENTRAL NODE</title>
+  </head>
+  <body>
+    <script src="https://www.gstatic.com/firebasejs/3.6.1/firebase.js"></script>
+    <script src="central_node.js"></script>
+      NODE A CHANNEL<br/>
+      <span id="aStatus" style="color:red"></span><br/>
+      key: <input type="text" id="keyTextA"/>
+      <button type="submit" onclick="startChannelA()">start</button>
+      <br/> <br/>
+      <a>My ID is: <span id="idA"></span></a>
+      <br/>
+      <a>key is: <span id="keyA"></span></a>
+      <br/> <br/>
+      
+      <a>Receiving messages from: <span id="incomingIdA"></span></a>
+      <br/>
+      ______________________________________ <br/> <br/>
+      
+      NODE B CHANNEL<br/>
+      <span id="bStatus" style="color:red"></span><br/>
+      key: <input type="text" id="keyTextB"/>
+      <button type="submit" onclick="startChannelB()">start</button>
+      <br/> <br/>
+      <a>My ID is: <span id="idB"></span></a>
+      <br/>
+      <a>key is: <span id="keyB"></span></a>
+      <br/> <br/>
+      <a>Receiving messages from: <span id="incomingIdB"></span></a>
+      <br/>
+      ______________________________________ <br/> <br/>
+      
+      NODE C CHANNEL<br/>
+      <span id="cStatus" style="color:red"></span><br/>
+      key: <input type="text" id="keyTextC"/>
+      <button type="submit" onclick="startChannelC()">start</button>
+      <br/> <br/>
+      <a>My ID is: <span id="idC"></span></a>
+      <br/>
+      <a>key is: <span id="keyC"></span></a>
+      <br/> <br/>
+      <a>Receiving messages from: <span id="incomingIdC"></span></a>
+      <br/>
+      ______________________________________ <br/> <br/>
+      
+      Text to send:<textarea type="text" id="sendText"></textarea>
+      <button type="submit" onclick="sendData()">submit</button> <br/><br/>
+      Text fetched:<textarea type="text" id="fetchText"></textarea>
+      <button type="submit" onclick="fetchData()">fetch</button> <br/>
+      <br/>
+      Part1:<span id="part1"></span> <br/>
+      Part2:<span id="part2"></span> <br/>
+      Part3:<span id="part3"></span> <br/>
+  </body>
+</html>

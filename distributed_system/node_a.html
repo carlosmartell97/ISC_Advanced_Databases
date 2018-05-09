@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Node A</title>
+  </head>
+  <body>
+    <script src="https://www.gstatic.com/firebasejs/3.6.1/firebase.js"></script>
+    <script src="small_node.js"></script>
+      NODE A CHANNEL<br/>
+      key: <input type="text" id="keyText"/>
+      <button type="submit" id="StartA" onclick="startCentralChannel(this.id)">start</button> <button type="submit" id="StopA" onclick="stopCentralChannel(this.id)">stop</button>
+      <br/> <br/>
+      <a>My ID is: <span id="id"></span></a>
+      <br/>
+      <a>key is: <span id="key"></span></a>
+      <br/> <br/>
+      <a>part1:<span id="part1"></span></a>
+      <br/>
+      <a>part2:<span id="part2"></span></a>
+      <br/>
+      <a>part3:<span id="part3"></span></a>
+      <br/> <br/>
+      <!--
+      Text to send:<textarea type="text" id="sendText"></textarea>
+      <button type="submit" onclick="sendData()">submit</button>
+      <br/> <br/>
+      -->
+      <a>Receiving messages from: <span id="incomingId"></span></a>
+      <br/>
+      <!--
+      Text fetched:<textarea id="incomingText"></textarea>
+      <br/>
+      -->
+      ______________________________________
+
+  </body>
+</html>
